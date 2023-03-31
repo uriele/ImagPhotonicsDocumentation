@@ -1,0 +1,66 @@
+using Documenter, ImagPhotonics
+
+# The DOCSARGS environment variable can be used to pass additional arguments to make.jl.
+# This is useful on CI, if you need to change the behavior of the build slightly but you
+# can not change the .travis.yml or make.jl scripts any more (e.g. for a tag build).
+if haskey(ENV, "DOCSARGS")
+    for arg in split(ENV["DOCSARGS"])
+        (arg in ARGS) || push!(ARGS, arg)
+    end
+end
+
+function rewrite_changelog(;
+    changelog_filename::String,
+    release_notes_filename::String,
+    current_module::String,
+    repo::String,
+    branch::String = "master",
+)
+    header = """
+    ```@meta
+    CurrentModule = $current_module
+    EditURL = "https://github.com/$repo/blob/$branch/CHANGELOG.md"
+    ```
+    """
+    open(changelog_filename, "r") do in_io
+        open(release_notes_filename, "w") do out_io
+            write(out_io, header)
+            for line in readlines(in_io; keep = true)
+                write(out_io, fix_release_line(line; repo = repo))
+            end
+        end
+    end
+    return
+end
+
+rewrite_changelog(
+    changelog_filename = joinpath(dirname(@__DIR__), "CHANGELOG.md"),
+    release_notes_filename = joinpath(@__DIR__, "src", "release-notes.md"),
+    current_module = "ImagPhotonics",
+    repo = "uriele/ImagPhotonics",
+
+)
+
+makedocs( root="./"
+    modules = [ImagPhotonics],
+    build = "build",
+    source= "src",
+    clean = true,
+    sitename = "ImagPhotonics",
+    authors = "Marco Menarini, and contributors.",
+    pages = [
+        "Home" => "index.md",
+        "Manual" => Any["Guide" => "man/examples.md"],
+        "Library" => Any["Public"=> "lib/functions.md"]
+    ],
+    doctest=true,
+    highlightsig = true,
+    expandfirst = [],
+)
+
+deploydocs(
+        repo = "github.com/uriele/ImagPhotonics.git",
+        target = "build",
+        push_preview = true,
+    )
+end

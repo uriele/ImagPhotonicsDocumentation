@@ -1,0 +1,5 @@
+# Public
+
+```@autodocs
+Modules = [ImagPhotonics]
+```
